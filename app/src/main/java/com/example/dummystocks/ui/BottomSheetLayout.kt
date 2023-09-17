@@ -1,4 +1,7 @@
-@file:OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class,
+  ExperimentalMaterial3Api::class
+)
+@file:Suppress("unused")
 
 package com.example.dummystocks.ui
 
@@ -25,10 +28,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.SheetValue
-import androidx.compose.material3.SheetValue.Expanded
-import androidx.compose.material3.SheetValue.Hidden
-import androidx.compose.material3.SheetValue.PartiallyExpanded
 import androidx.compose.material3.SmallTopAppBar
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
@@ -62,12 +61,36 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
+import com.example.dummystocks.ui.SheetValue.Expanded
+import com.example.dummystocks.ui.SheetValue.Hidden
+import com.example.dummystocks.ui.SheetValue.PartiallyExpanded
+import com.example.dummystocks.ui.SheetValue.PartiallyHidden
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
-private val DragHandleVerticalPadding = 22.dp
 internal val BottomSheetMaxWidth = 640.dp
+
+enum class SheetValue {
+  /**
+   * The sheet is not visible.
+   */
+  Hidden,
+  /**
+   * The sheet is partially visible.
+   */
+  PartiallyHidden,
+
+  /**
+   * The sheet is visible at full height.
+   */
+  Expanded,
+
+  /**
+   * The sheet is partially visible.
+   */
+  PartiallyExpanded,
+}
 
 internal fun ConsumeSwipeWithinBottomSheetBoundsNestedScrollConnection(
   sheetState: SheetState,
@@ -146,7 +169,7 @@ internal fun ConsumeSwipeWithinBottomSheetBoundsNestedScrollConnection(
  * @param sheetContent the content of the bottom sheet
  * @param modifier the [Modifier] to be applied to this scaffold
  * @param scaffoldState the state of the bottom sheet scaffold
- * @param sheetPeekHeight the height of the bottom sheet when it is collapsed
+ * @param sheetPartialExpandedHeight the height of the bottom sheet when it is collapsed
  * @param sheetShape the shape of the bottom sheet
  * @param sheetContainerColor the background color of the bottom sheet
  * @param sheetContentColor the preferred content color provided by the bottom sheet to its
@@ -171,12 +194,12 @@ internal fun ConsumeSwipeWithinBottomSheetBoundsNestedScrollConnection(
  * the child of the scroll, and not on the scroll itself.
  */
 @Composable
-@ExperimentalMaterial3Api
 fun BottomSheetScaffold(
   sheetContent: @Composable ColumnScope.() -> Unit,
   modifier: Modifier = Modifier,
   scaffoldState: BottomSheetScaffoldState = rememberBottomSheetScaffoldState(),
-  sheetPeekHeight: Dp = BottomSheetDefaults.SheetPeekHeight,
+  sheetPartialExpandedHeight: Dp = BottomSheetDefaults.SheetPeekHeight,
+  sheetPartialHiddenHeight: Dp = BottomSheetDefaults.SheetPeekHeight,
   sheetShape: Shape = BottomSheetDefaults.ExpandedShape,
   sheetContainerColor: Color = BottomSheetDefaults.ContainerColor,
   sheetContentColor: Color = contentColorFor(sheetContainerColor),
@@ -190,8 +213,11 @@ fun BottomSheetScaffold(
   contentColor: Color = contentColorFor(containerColor),
   content: @Composable (PaddingValues) -> Unit
 ) {
-  val peekHeightPx = with(LocalDensity.current) {
-    sheetPeekHeight.roundToPx()
+  val sheetPartialExpandedHeightPx = with(LocalDensity.current) {
+    sheetPartialExpandedHeight.roundToPx()
+  }
+  val sheetPartialHiddenHeightPx = with(LocalDensity.current) {
+    sheetPartialHiddenHeight.roundToPx()
   }
   BottomSheetScaffoldLayout(
     modifier = modifier,
@@ -200,7 +226,8 @@ fun BottomSheetScaffold(
     snackbarHost = {
       snackbarHost(scaffoldState.snackbarHostState)
     },
-    sheetPeekHeight = sheetPeekHeight,
+    sheetPartialExpandedHeight = sheetPartialExpandedHeight,
+    sheetPartialHiddenHeight = sheetPartialHiddenHeight,
     sheetOffset = { scaffoldState.bottomSheetState.requireOffset() },
     sheetState = scaffoldState.bottomSheetState,
     containerColor = containerColor,
@@ -208,15 +235,19 @@ fun BottomSheetScaffold(
     bottomSheet = { layoutHeight ->
       StandardBottomSheet(
         state = scaffoldState.bottomSheetState,
-        peekHeight = sheetPeekHeight,
+        sheetPartialExpandedHeight = sheetPartialExpandedHeight,
+        sheetPartialHiddenHeight = sheetPartialHiddenHeight,
         sheetSwipeEnabled = sheetSwipeEnabled,
         calculateAnchors = { sheetSize ->
           val sheetHeight = sheetSize.height
           DraggableAnchors {
             if (!scaffoldState.bottomSheetState.skipPartiallyExpanded) {
-              PartiallyExpanded at (layoutHeight - peekHeightPx).toFloat()
+              PartiallyExpanded at (layoutHeight - sheetPartialExpandedHeightPx).toFloat()
             }
-            if (sheetHeight != peekHeightPx) {
+            if (!scaffoldState.bottomSheetState.skipPartiallyHidden) {
+              PartiallyHidden at (layoutHeight - sheetPartialHiddenHeightPx).toFloat()
+            }
+            if (sheetHeight != sheetPartialExpandedHeightPx) {
               Expanded at maxOf(layoutHeight - sheetHeight, 0).toFloat()
             }
             if (!scaffoldState.bottomSheetState.skipHiddenState) {
@@ -242,8 +273,6 @@ fun BottomSheetScaffold(
  * @param bottomSheetState the state of the persistent bottom sheet
  * @param snackbarHostState the [SnackbarHostState] used to show snackbars inside the scaffold
  */
-@ExperimentalMaterial3Api
-@Stable
 class BottomSheetScaffoldState(
   val bottomSheetState: SheetState,
   val snackbarHostState: SnackbarHostState
@@ -257,7 +286,6 @@ class BottomSheetScaffoldState(
  * @param snackbarHostState the [SnackbarHostState] used to show snackbars inside the scaffold
  */
 @Composable
-@ExperimentalMaterial3Api
 fun rememberBottomSheetScaffoldState(
   bottomSheetState: SheetState = rememberStandardBottomSheetState(),
   snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
@@ -279,20 +307,25 @@ fun rememberBottomSheetScaffoldState(
  * @param [skipHiddenState] whether Hidden state is skipped for [BottomSheetScaffold]
  */
 @Composable
-@ExperimentalMaterial3Api
 fun rememberStandardBottomSheetState(
   initialValue: SheetValue = PartiallyExpanded,
   confirmValueChange: (SheetValue) -> Boolean = { true },
   skipHiddenState: Boolean = true,
-) = rememberSheetState(false, confirmValueChange, initialValue, skipHiddenState)
+) = rememberSheetState(
+  skipPartiallyExpanded = false,
+  skipPartiallyHidden = false,
+  confirmValueChange = confirmValueChange,
+  initialValue = initialValue,
+  skipHiddenState = skipHiddenState
+)
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun StandardBottomSheet(
   state: SheetState,
   @Suppress("PrimitiveInLambda")
   calculateAnchors: (sheetSize: IntSize) -> DraggableAnchors<SheetValue>,
-  peekHeight: Dp,
+  sheetPartialExpandedHeight: Dp,
+  sheetPartialHiddenHeight: Dp,
   sheetSwipeEnabled: Boolean,
   shape: Shape,
   containerColor: Color,
@@ -304,13 +337,19 @@ private fun StandardBottomSheet(
 ) {
   val scope = rememberCoroutineScope()
 
-  val orientation = Orientation.Vertical
+  val orientation = Vertical
+
+  val requireHeight = when (state.currentValue) {
+    PartiallyExpanded -> sheetPartialExpandedHeight
+    PartiallyHidden -> sheetPartialHiddenHeight
+    else -> 0.dp
+  }
 
   Surface(
     modifier = Modifier
       .widthIn(max = BottomSheetMaxWidth)
       .fillMaxWidth()
-      .requiredHeightIn(min = peekHeight)
+      .requiredHeightIn(min = requireHeight)
       .nestedScroll(
         remember(state.anchoredDraggableState) {
           ConsumeSwipeWithinBottomSheetBoundsNestedScrollConnection(
@@ -332,6 +371,9 @@ private fun StandardBottomSheet(
           Expanded -> {
             if (newAnchors.hasAnchorFor(Expanded)) Expanded else PartiallyExpanded
           }
+          PartiallyHidden -> {
+            if (newAnchors.hasAnchorFor(PartiallyHidden)) PartiallyHidden else PartiallyExpanded
+          }
         }
         state.anchoredDraggableState.updateAnchors(newAnchors, newTarget)
       },
@@ -344,6 +386,7 @@ private fun StandardBottomSheet(
     Column(Modifier.fillMaxWidth()) {
       if (dragHandle != null) {
         val partialExpandActionLabel = ""
+        val partialHideActionLabel = ""
         val dismissActionLabel = "getString(Strings.BottomSheetDismissDescription)"
         val expandActionLabel = "getString(Strings.BottomSheetExpandDescription)"
         Box(
@@ -353,6 +396,8 @@ private fun StandardBottomSheet(
               with(state) {
                 // Provides semantics to interact with the bottomsheet if there is more
                 // than one anchor to swipe to and swiping is enabled.
+                // TODO: update semantics to support swiping to / from partial hidden state
+
                 if (anchoredDraggableState.anchors.size > 1 && sheetSwipeEnabled) {
                   if (currentValue == PartiallyExpanded) {
                     expand(expandActionLabel) {
@@ -381,7 +426,6 @@ private fun StandardBottomSheet(
   }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun BottomSheetScaffoldLayout(
   modifier: Modifier,
@@ -389,7 +433,8 @@ private fun BottomSheetScaffoldLayout(
   body: @Composable (innerPadding: PaddingValues) -> Unit,
   bottomSheet: @Composable (layoutHeight: Int) -> Unit,
   snackbarHost: @Composable () -> Unit,
-  sheetPeekHeight: Dp,
+  sheetPartialExpandedHeight: Dp,
+  sheetPartialHiddenHeight: Dp,
   sheetOffset: () -> Float,
   sheetState: SheetState,
   containerColor: Color,
@@ -421,7 +466,7 @@ private fun BottomSheetScaffoldLayout(
         modifier = modifier,
         color = containerColor,
         contentColor = contentColor,
-      ) { body(PaddingValues(bottom = sheetPeekHeight)) }
+      ) { body(PaddingValues(bottom = sheetPartialHiddenHeight)) }
     }[0].measure(bodyConstraints)
 
     val snackbarPlaceable = subcompose(BottomSheetScaffoldLayoutSlot.Snackbar, snackbarHost)[0]
@@ -433,7 +478,7 @@ private fun BottomSheetScaffoldLayout(
 
       val snackbarOffsetX = (layoutWidth - snackbarPlaceable.width) / 2
       val snackbarOffsetY = when (sheetState.currentValue) {
-        PartiallyExpanded -> sheetOffsetY - snackbarPlaceable.height
+        PartiallyExpanded, PartiallyHidden  -> sheetOffsetY - snackbarPlaceable.height
         Expanded, Hidden -> layoutHeight - snackbarPlaceable.height
       }
 
@@ -463,36 +508,6 @@ private enum class BottomSheetScaffoldLayoutSlot {
  * to the [Hidden] state if available when hiding the sheet, either programmatically or by user
  * interaction.
  * @param initialValue The initial value of the state.
- * @param density The density that this state can use to convert values to and from dp.
- * @param confirmValueChange Optional callback invoked to confirm or veto a pending state change.
- * @param skipHiddenState Whether the hidden state should be skipped. If true, the sheet will always
- * expand to the [Expanded] state and move to the [PartiallyExpanded] if available, either
- * programmatically or by user interaction.
- */
-@ExperimentalMaterial3Api
-@Suppress("Deprecation")
-fun SheetState(
-  skipPartiallyExpanded: Boolean,
-  density: Density,
-  initialValue: SheetValue = Hidden,
-  confirmValueChange: (SheetValue) -> Boolean = { true },
-  skipHiddenState: Boolean = false,
-) = SheetState(
-  skipPartiallyExpanded, initialValue, confirmValueChange, skipHiddenState
-).also {
-  it.density = density
-}
-
-/**
- * State of a sheet composable, such as [ModalBottomSheet]
- *
- * Contains states relating to its swipe position as well as animations between state values.
- *
- * @param skipPartiallyExpanded Whether the partially expanded state, if the sheet is large
- * enough, should be skipped. If true, the sheet will always expand to the [Expanded] state and move
- * to the [Hidden] state if available when hiding the sheet, either programmatically or by user
- * interaction.
- * @param initialValue The initial value of the state.
  * @param confirmValueChange Optional callback invoked to confirm or veto a pending state change.
  * @param skipHiddenState Whether the hidden state should be skipped. If true, the sheet will always
  * expand to the [Expanded] state and move to the [PartiallyExpanded] if available, either
@@ -500,16 +515,10 @@ fun SheetState(
  */
 @Stable
 @ExperimentalMaterial3Api
-class SheetState @Deprecated(
-  message = "This constructor is deprecated. " +
-      "Please use the constructor that provides a [Density]",
-  replaceWith = ReplaceWith(
-    "SheetState(" +
-        "skipPartiallyExpanded, LocalDensity.current, initialValue, " +
-        "confirmValueChange, skipHiddenState)"
-  )
-) constructor(
+class SheetState(
   internal val skipPartiallyExpanded: Boolean,
+  internal val skipPartiallyHidden: Boolean,
+  internal var density: Density? = null,
   initialValue: SheetValue = Hidden,
   confirmValueChange: (SheetValue) -> Boolean = { true },
   internal val skipHiddenState: Boolean = false,
@@ -518,6 +527,12 @@ class SheetState @Deprecated(
     if (skipPartiallyExpanded) {
       require(initialValue != PartiallyExpanded) {
         "The initial value must not be set to PartiallyExpanded if skipPartiallyExpanded " +
+            "is set to true."
+      }
+    }
+    if(skipPartiallyHidden) {
+      require(initialValue != PartiallyHidden) {
+        "The initial value must not be set to PartiallyHidden if skipPartiallyHidden " +
             "is set to true."
       }
     }
@@ -585,6 +600,12 @@ class SheetState @Deprecated(
     get() = anchoredDraggableState.anchors.hasAnchorFor(PartiallyExpanded)
 
   /**
+   * Whether the modal bottom sheet has a partially hidden state defined.
+   */
+  val hasPartiallyHiddenState: Boolean
+    get() = anchoredDraggableState.anchors.hasAnchorFor(PartiallyHidden)
+
+  /**
    * Fully expand the bottom sheet with animation and suspend until it is fully expanded or
    * animation has been cancelled.
    * *
@@ -606,6 +627,20 @@ class SheetState @Deprecated(
           " skipPartiallyExpanded to false to use this function."
     }
     animateTo(PartiallyExpanded)
+  }
+
+  /**
+   * Animate the bottom sheet and suspend until it is partially hidden or animation has been
+   * cancelled.
+   * @throws [CancellationException] if the animation is interrupted
+   * @throws [IllegalStateException] if [skipPartiallyHidden] is set to true
+   */
+  suspend fun partialHide() {
+    check(!skipPartiallyHidden) {
+      "Attempted to animate to partial hidden when skipPartiallyHidden was enabled. Set" +
+          " skipPartiallyHidden to false to use this function."
+    }
+    animateTo(PartiallyHidden)
   }
 
   /**
@@ -644,7 +679,7 @@ class SheetState @Deprecated(
    *
    * @param targetValue The target value of the animation
    */
-  internal suspend fun animateTo(
+  private suspend fun animateTo(
     targetValue: SheetValue,
     velocity: Float = anchoredDraggableState.lastVelocity
   ) {
@@ -659,7 +694,7 @@ class SheetState @Deprecated(
    *
    * @param targetValue The target value of the animation
    */
-  internal suspend fun snapTo(targetValue: SheetValue) {
+  private suspend fun snapTo(targetValue: SheetValue) {
     anchoredDraggableState.snapTo(targetValue)
   }
 
@@ -672,7 +707,7 @@ class SheetState @Deprecated(
 
   internal var anchoredDraggableState = AnchoredDraggableState(
     initialValue = initialValue,
-    animationSpec = SpringSpec<Float>(),
+    animationSpec = SpringSpec(),
     confirmValueChange = confirmValueChange,
     positionalThreshold = { with(requireDensity()) { 56.dp.toPx() } },
     velocityThreshold = { with(requireDensity()) { 125.dp.toPx() } }
@@ -680,7 +715,6 @@ class SheetState @Deprecated(
 
   internal val offset: Float? get() = anchoredDraggableState.offset
 
-  internal var density: Density? = null
   private fun requireDensity() = requireNotNull(density) {
     "SheetState did not have a density attached. Are you using SheetState with " +
         "BottomSheetScaffold or ModalBottomSheet component?"
@@ -692,42 +726,22 @@ class SheetState @Deprecated(
      */
     fun Saver(
       skipPartiallyExpanded: Boolean,
+      skipPartiallyHidden: Boolean,
       confirmValueChange: (SheetValue) -> Boolean,
       density: Density
     ) = Saver<SheetState, SheetValue>(
       save = { it.currentValue },
       restore = { savedValue ->
-        SheetState(skipPartiallyExpanded, density, savedValue, confirmValueChange)
-      }
-    )
-
-    /**
-     * The default [Saver] implementation for [SheetState].
-     */
-    @Deprecated(
-      message = "This function is deprecated. Please use the overload where Density is" +
-          " provided.",
-      replaceWith = ReplaceWith(
-        "Saver(skipPartiallyExpanded, confirmValueChange, LocalDensity.current)"
-      )
-    )
-    @Suppress("Deprecation")
-    fun Saver(
-      skipPartiallyExpanded: Boolean,
-      confirmValueChange: (SheetValue) -> Boolean
-    ) = Saver<SheetState, SheetValue>(
-      save = { it.currentValue },
-      restore = { savedValue ->
-        SheetState(skipPartiallyExpanded, savedValue, confirmValueChange)
+        SheetState(skipPartiallyExpanded, skipPartiallyHidden,density, savedValue, confirmValueChange)
       }
     )
   }
 }
 
 @Composable
-@ExperimentalMaterial3Api
 internal fun rememberSheetState(
   skipPartiallyExpanded: Boolean = false,
+  skipPartiallyHidden: Boolean = false,
   confirmValueChange: (SheetValue) -> Boolean = { true },
   initialValue: SheetValue = Hidden,
   skipHiddenState: Boolean = false,
@@ -735,15 +749,18 @@ internal fun rememberSheetState(
 
   val density = LocalDensity.current
   return rememberSaveable(
-    skipPartiallyExpanded, confirmValueChange,
+    skipPartiallyExpanded,
+    confirmValueChange,
     saver = SheetState.Saver(
       skipPartiallyExpanded = skipPartiallyExpanded,
+      skipPartiallyHidden = skipPartiallyHidden,
       confirmValueChange = confirmValueChange,
       density = density
     )
   ) {
     SheetState(
       skipPartiallyExpanded,
+      skipPartiallyHidden,
       density,
       initialValue,
       confirmValueChange,

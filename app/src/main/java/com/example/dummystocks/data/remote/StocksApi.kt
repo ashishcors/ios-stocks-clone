@@ -23,6 +23,20 @@ class StocksApiImpl : StocksApi {
 
   private val dummyStocks = listOf(
     StockResponse(
+      "Dow Jones",
+      "Dow Jones Industrial Average",
+      35456.42,
+      16.43,
+      listOf(35250.1, 35400.2, 35555.3, 35330.4, 35660.5, 35420.6, 35500.7, 35390.8, 35610.9, 35520.0),
+    ),
+    StockResponse(
+      "S&P 500",
+      "Standard & Poor's 500",
+      4561.00,
+      0.43,
+      listOf(4540.0, 4572.1, 4555.5, 4580.0, 4566.7, 4534.8, 4590.2, 4550.0, 4575.3, 4542.9),
+    ),
+    StockResponse(
       "AAPL",
       "Apple Inc.",
       155.6,
@@ -341,7 +355,7 @@ class StocksApiImpl : StocksApi {
   )
 
   override suspend fun getSuggestedStocks(): List<StockResponse> {
-    return dummyStocks.take(6)
+    return dummyStocks.take(8)
   }
 
   override fun getStockUpdates(ids: List<String>): Flow<List<StockResponse>> = flow {

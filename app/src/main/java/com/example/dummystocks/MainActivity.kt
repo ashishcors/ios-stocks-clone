@@ -21,48 +21,51 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MoreHoriz
-import androidx.compose.material3.BottomSheetScaffold
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.UnfoldMore
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SheetValue.Expanded
-import androidx.compose.material3.SheetValue.PartiallyExpanded
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberBottomSheetScaffoldState
-import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.dummystocks.domain.model.News
+import com.example.dummystocks.domain.model.Stock
+import com.example.dummystocks.ui.BottomSheetScaffold
+import com.example.dummystocks.ui.SheetValue.PartiallyExpanded
+import com.example.dummystocks.ui.SheetValue.PartiallyHidden
+import com.example.dummystocks.ui.rememberBottomSheetScaffoldState
+import com.example.dummystocks.ui.rememberStandardBottomSheetState
 import com.example.dummystocks.ui.theme.DummyStocksTheme
 import com.example.dummystocks.utils.DATE_FORMAT_MMMM_DD
 import com.example.dummystocks.utils.format
 import com.example.dummystocks.utils.timeAgo
 import dagger.hilt.android.AndroidEntryPoint
-import timber.log.Timber
 import java.time.LocalDate
 
 @AndroidEntryPoint
@@ -75,40 +78,29 @@ class MainActivity : ComponentActivity() {
         // A surface container using the 'background' color from the theme
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
 
-          var expanded by remember { mutableStateOf(false) }
           val primarySheetState = rememberStandardBottomSheetState(
-            initialValue = Expanded,
+            initialValue = PartiallyExpanded,
             skipHiddenState = true,
           )
 
-          LaunchedEffect(key1 = primarySheetState.currentValue,  primarySheetState.targetValue){
-            if (primarySheetState.currentValue == PartiallyExpanded && primarySheetState.targetValue != Expanded) {
-              expanded = true
-            } else if (primarySheetState.currentValue == Expanded && primarySheetState.targetValue == PartiallyExpanded) {
-              expanded = false
-              primarySheetState.expand()
-            }
-          }
-
-          val coroutineScope = rememberCoroutineScope()
           val stocks by viewModel.myStocks.collectAsState(initial = emptyList())
           val news by viewModel.news.collectAsState(initial = emptyList())
+          val configuration = LocalConfiguration.current
 
           BottomSheetScaffold(
             scaffoldState = rememberBottomSheetScaffoldState(primarySheetState),
-            sheetPeekHeight = 100.dp,
+            sheetPartialExpandedHeight = 360.dp,
+            sheetPartialHiddenHeight = 100.dp,
             sheetShape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
             topBar = {
               Row(
                 modifier = Modifier
                   .fillMaxWidth()
-                  .height(56.dp),
+                  .height(56.dp)
+                  .padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
               ) {
-                Column(
-                  modifier = Modifier
-                    .padding(start = 16.dp),
-                ) {
+                Column {
                   Text(
                     text = "Stocks",
                     style = MaterialTheme.typography.headlineSmall,
@@ -120,15 +112,20 @@ class MainActivity : ComponentActivity() {
                   )
                 }
                 IconButton(
-                  modifier = Modifier.height(36.dp),
+                  modifier = Modifier,
                   onClick = {
-                    Toast.makeText(
-                      this@MainActivity,
-                      "Search pressed. ",
-                      Toast.LENGTH_SHORT
-                    ).show()
                   }) {
-                  Icon(Icons.Default.MoreHoriz, contentDescription = "Search")
+                  Icon(
+                    Icons.Default.MoreHoriz,
+                    contentDescription = "More options",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                      .background(
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f),
+                        shape = CircleShape,
+                      )
+                      .padding(4.dp),
+                  )
                 }
               }
             },
@@ -157,7 +154,7 @@ class MainActivity : ComponentActivity() {
               ) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                  text = if (primarySheetState.currentValue == PartiallyExpanded && primarySheetState.targetValue != Expanded) {
+                  text = if (primarySheetState.currentValue == PartiallyHidden && primarySheetState.targetValue == PartiallyHidden) {
                     "Business News"
                   } else {
                     "Top Stories"
@@ -170,9 +167,10 @@ class MainActivity : ComponentActivity() {
                   modifier = Modifier.padding(bottom = 8.dp),
                 )
               }
+              val maxHeight = configuration.screenHeightDp - 158
               LazyColumn(
                 modifier = Modifier
-                  .heightIn(min = 0.dp, max = if (expanded) 660.dp else 360.dp)
+                  .heightIn(min = 0.dp, max = maxHeight.dp)
                   .fillMaxSize()
                   .padding(horizontal = 16.dp)
               ) {
@@ -191,22 +189,71 @@ class MainActivity : ComponentActivity() {
             val lazyListState = rememberLazyListState()
 
             LaunchedEffect(lazyListState.isScrollInProgress) {
-              Timber.d("isScrolling: ${lazyListState.isScrollInProgress}, primarySheetState.currentValue: ${primarySheetState.currentValue}, expanded: $expanded")
-              if (lazyListState.isScrollInProgress && primarySheetState.currentValue == Expanded && !expanded) {
-                expanded = true
-                primarySheetState.partialExpand()
+              if (lazyListState.isScrollInProgress && primarySheetState.currentValue == PartiallyExpanded) {
+                primarySheetState.partialHide()
               }
             }
 
             LazyColumn(
               modifier = Modifier
                 .padding(scaffoldPadding)
+                .padding(horizontal = 16.dp)
                 .fillMaxSize(),
               state = lazyListState,
             ) {
+              item {
+                Column(
+                  modifier = Modifier
+                    .padding(vertical = 8.dp)
+                ) {
+                  // search bar
+                  Row(
+                    modifier = Modifier
+                      .fillMaxWidth()
+                      .background(
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f),
+                        shape = MaterialTheme.shapes.medium,
+                      )
+                      .padding(vertical = 8.dp, horizontal = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+
+                    ) {
+                    Icon(
+                      Icons.Default.Search,
+                      contentDescription = null,
+                    )
+                    Text(
+                      text = "Search",
+                      style = MaterialTheme.typography.bodyLarge,
+                      modifier = Modifier.weight(1f),
+                    )
+
+                    Icon(
+                      Icons.Default.Mic,
+                      contentDescription = null,
+                    )
+                  }
+
+                  Spacer(modifier = Modifier.height(16.dp))
+                  Row {
+                    Text(
+                      text = "My Symbols",
+                      style = MaterialTheme.typography.titleLarge,
+                      fontWeight = FontWeight.Bold,
+                      color = MaterialTheme.colorScheme.primary,
+                    )
+                    Icon(
+                      Icons.Default.UnfoldMore, contentDescription = null,
+                      tint = MaterialTheme.colorScheme.primary,
+                    )
+                  }
+                }
+              }
+
               items(stocks.size) { index ->
-                Box(modifier = Modifier.height(300.dp)) {
-                  Greeting(name = "${stocks[index].name}, ${stocks[index].price}")
+                Column {
+                  StockItemView(stock = stocks[index])
+                  HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 }
               }
             }
@@ -216,24 +263,64 @@ class MainActivity : ComponentActivity() {
       }
     }
   }
+}
 
-  @Composable
-  private fun DragHandle() {
+@Composable
+fun StockItemView(stock: Stock) {
+  Row(
+    modifier = Modifier.padding(
+      vertical = 4.dp
+    )
+  ) {
     Column(
       modifier = Modifier
-        .fillMaxWidth()
-        .padding(horizontal = 16.dp, vertical = 4.dp),
-      horizontalAlignment = Alignment.Start,
+        .weight(.5f)
+        .padding(vertical = 4.dp)
     ) {
-      Spacer(modifier = Modifier.height(8.dp))
       Text(
-        text = "Top Stories",
-        style = MaterialTheme.typography.headlineSmall,
+        text = stock.id,
+        style = MaterialTheme.typography.titleLarge,
         fontWeight = FontWeight.Bold,
       )
       Text(
-        text = "From @ News",
-        modifier = Modifier.padding(bottom = 8.dp),
+        text = stock.name,
+        style = MaterialTheme.typography.bodyMedium,
+        maxLines = 1,
+        )
+    }
+
+    Box(
+      modifier = Modifier
+        .weight(.2f)
+    ) {
+      // Chart goes here
+    }
+    Column(
+      modifier = Modifier.weight(.3f),
+      horizontalAlignment = Alignment.End,
+    ) {
+      Text(
+        text = String.format("%.2f", stock.price),
+        modifier = Modifier.fillMaxWidth(),
+        textAlign = TextAlign.End,
+        style = MaterialTheme.typography.titleLarge,
+        fontWeight = FontWeight.Bold,
+        maxLines = 1,
+      )
+      Text(
+        text = String.format("%+.2f", stock.change),
+        textAlign = TextAlign.End,
+        style = MaterialTheme.typography.bodyLarge,
+        fontWeight = FontWeight.Bold,
+        maxLines = 1,
+        modifier = Modifier
+          .width(80.dp)
+          .background(
+            if (stock.change > 0) Color.Green
+            else Color.Red,
+            MaterialTheme.shapes.small
+          )
+          .padding(vertical = 4.dp, horizontal = 8.dp)
       )
     }
   }
