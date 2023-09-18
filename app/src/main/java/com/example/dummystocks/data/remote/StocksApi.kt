@@ -355,7 +355,7 @@ class StocksApiImpl : StocksApi {
   )
 
   override suspend fun getSuggestedStocks(): List<StockResponse> {
-    return dummyStocks.take(8)
+    return dummyStocks
   }
 
   override fun getStockUpdates(ids: List<String>): Flow<List<StockResponse>> = flow {

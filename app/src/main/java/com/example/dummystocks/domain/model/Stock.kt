@@ -6,7 +6,7 @@ data class Stock(
   val price: Double,
   val change: Double,
   val chart: List<Double>,
-  val isFavourite: Boolean = false,
+  val isInWatchlist: Boolean = false,
 ) {
   val tickerSymbol = id
   val isPositive = change >= 0

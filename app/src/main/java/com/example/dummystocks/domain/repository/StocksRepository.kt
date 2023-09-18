@@ -7,7 +7,11 @@ import kotlinx.coroutines.flow.Flow
 
 interface StocksRepository {
 
-  fun getFavouriteStocks(): Flow<List<Stock>>
+  fun getWatchlistStocks(): Flow<List<Stock>>
 
   fun getNews(): Flow<List<News>>
+
+  suspend fun findStocks(query: String): SafeResult<List<Stock>>
+
+  suspend fun updateStockWatchlistStatus(stock: Stock, isInWatchlist: Boolean): SafeResult<Unit>
 }

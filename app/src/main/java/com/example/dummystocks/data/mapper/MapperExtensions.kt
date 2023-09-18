@@ -1,17 +1,17 @@
 package com.example.dummystocks.data.mapper
 
 import com.example.dummystocks.data.local.entity.StockEntity
-import com.example.dummystocks.data.local.entity.StockWithFavorite
+import com.example.dummystocks.data.local.entity.StockWithWatchlistInfo
 import com.example.dummystocks.data.remote.model.StockResponse
 import com.example.dummystocks.domain.model.Stock
 
-fun StockWithFavorite.toDomain(): Stock = Stock(
+fun StockWithWatchlistInfo.toDomain(): Stock = Stock(
   id = stock.id,
   name = stock.name,
   price = stock.price,
   change = stock.change,
   chart = stock.chart,
-  isFavourite = isFavourite,
+  isInWatchlist = isInWatchlist,
 )
 
 

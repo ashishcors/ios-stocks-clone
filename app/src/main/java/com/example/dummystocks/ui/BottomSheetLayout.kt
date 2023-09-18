@@ -1,7 +1,4 @@
-@file:OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class,
-  ExperimentalMaterial3Api::class
-)
-@file:Suppress("unused")
+@file:OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 
 package com.example.dummystocks.ui
 
@@ -142,10 +139,10 @@ internal fun ConsumeSwipeWithinBottomSheetBoundsNestedScrollConnection(
   )
 
   @JvmName("velocityToFloat")
-  private fun Velocity.toFloat() = if (orientation == Orientation.Horizontal) x else y
+  private fun Velocity.toFloat() = if (orientation == Horizontal) x else y
 
   @JvmName("offsetToFloat")
-  private fun Offset.toFloat(): Float = if (orientation == Orientation.Horizontal) x else y
+  private fun Offset.toFloat(): Float = if (orientation == Horizontal) x else y
 }
 
 /**
@@ -163,8 +160,6 @@ internal fun ConsumeSwipeWithinBottomSheetBoundsNestedScrollConnection(
  * components will work together correctly.
  *
  * A simple example of a standard bottom sheet looks like this:
- *
- * @sample androidx.compose.material3.samples.SimpleBottomSheetScaffoldSample
  *
  * @param sheetContent the content of the bottom sheet
  * @param modifier the [Modifier] to be applied to this scaffold
@@ -514,7 +509,6 @@ private enum class BottomSheetScaffoldLayoutSlot {
  * programmatically or by user interaction.
  */
 @Stable
-@ExperimentalMaterial3Api
 class SheetState(
   internal val skipPartiallyExpanded: Boolean,
   internal val skipPartiallyHidden: Boolean,

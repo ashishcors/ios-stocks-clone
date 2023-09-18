@@ -25,23 +25,23 @@ data class StockEntity(
   val chart: List<Double>,
 )
 
-@Entity(tableName = "favorite_stock_entity")
-data class FavoriteStockEntity(
+@Entity(tableName = "watchlist_stock_entity")
+data class WatchlistStockEntity(
   @PrimaryKey @ColumnInfo("id")
   val id: String,
 )
 
-data class StockWithFavorite(
+data class StockWithWatchlistInfo(
   @Embedded
   val stock: StockEntity,
 
   @Relation(
     parentColumn = "id",
     entityColumn = "id",
-    entity = FavoriteStockEntity::class,
+    entity = WatchlistStockEntity::class,
   )
-  val favourite: FavoriteStockEntity?,
+  val watchlistEntry: WatchlistStockEntity?,
 ) {
   @Ignore
-  val isFavourite = favourite != null
+  val isInWatchlist = watchlistEntry != null
 }

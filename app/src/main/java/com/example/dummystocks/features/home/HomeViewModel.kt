@@ -1,4 +1,4 @@
-package com.example.dummystocks
+package com.example.dummystocks.features.home
 
 import androidx.lifecycle.ViewModel
 import com.example.dummystocks.domain.repository.StocksRepository
@@ -6,12 +6,11 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
 @HiltViewModel
-class MainViewModel @Inject constructor(
+class HomeViewModel @Inject constructor(
   private val stocksRepository: StocksRepository,
 ) : ViewModel() {
 
-  val myStocks = stocksRepository.getFavouriteStocks()
+  val myStocks = stocksRepository.getWatchlistStocks()
 
   val news = stocksRepository.getNews()
-
 }

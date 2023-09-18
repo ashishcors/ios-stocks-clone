@@ -6,27 +6,29 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Upsert
-import com.example.dummystocks.data.local.entity.FavoriteStockEntity
 import com.example.dummystocks.data.local.entity.StockEntity
-import com.example.dummystocks.data.local.entity.StockWithFavorite
+import com.example.dummystocks.data.local.entity.StockWithWatchlistInfo
+import com.example.dummystocks.data.local.entity.WatchlistStockEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface StockDao {
   @Transaction
   @Query("SELECT * FROM stock_entity")
-  fun getFavoriteStocks(): Flow<List<StockWithFavorite>>
+  fun getWatchlistStocksFlow(): Flow<List<StockWithWatchlistInfo>>
 
-  @Query("SELECT * FROM favorite_stock_entity")
-  fun getFavouriteStockIds(): Flow<List<FavoriteStockEntity>>
+  @Query("SELECT * FROM watchlist_stock_entity")
+  fun getWatchlistStockIdsFlow(): Flow<List<WatchlistStockEntity>>
 
-  // Insert or update the stock without changing the favourite status
+  @Query("SELECT * FROM watchlist_stock_entity")
+  suspend fun getWatchlistStockIds(): List<WatchlistStockEntity>
+
   @Upsert
-  suspend fun insertAll(stocks: List<StockEntity>)
+  suspend fun insertStocks(stocks: List<StockEntity>)
 
   @Insert(onConflict = OnConflictStrategy.REPLACE)
-  suspend fun insert(favorite: FavoriteStockEntity)
+  suspend fun insertWatchlistEntry(item: WatchlistStockEntity)
 
-  @Query("DELETE FROM favorite_stock_entity WHERE id = :id")
-  suspend fun deleteF(id: String)
+  @Query("DELETE FROM watchlist_stock_entity WHERE id = :id")
+  suspend fun deleteWatchEntry(id: String)
 }

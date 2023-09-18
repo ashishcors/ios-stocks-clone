@@ -33,12 +33,6 @@ object AppModule {
 
   @Provides
   @Singleton
-  fun provideNewsDao(
-    database: AppDatabase,
-  ) = database.newsDao()
-
-  @Provides
-  @Singleton
   fun provideStocksApi(): StocksApi {
     return StocksApiImpl()
   }
