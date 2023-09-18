@@ -5,5 +5,4 @@ A a clone of the iOS Stocks app. The app displays a list of stocks and their cur
 Primarily to replicate the behaviour of news bottom-sheet on home screen.
 
 ## Preview
-<video src="https://github.com/ashishcors/ios-stock-clone/blob/main/screenshots/recording.mp4" controls="controls" style="max-width: 730px;">
-</video>
+[Screen_recording](https://github.com/ashishcors/ios-stock-clone/assets/36896435/5f729cab-1237-4e69-8335-5e9d17e39445)
