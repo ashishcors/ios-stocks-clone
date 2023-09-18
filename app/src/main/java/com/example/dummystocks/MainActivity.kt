@@ -1,12 +1,9 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
-
 package com.example.dummystocks
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
@@ -33,6 +30,9 @@ class MainActivity : ComponentActivity() {
                 navController.navigate("search")
               }
             }
+            // Note: looking at iOS implementation, it might be using same screen for search and
+            // home we can do that, or we can try using the SharedElement transition to get the same
+            // effect in compose.
             composable("search") { SearchScreen() }
           }
         }
